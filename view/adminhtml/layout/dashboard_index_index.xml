@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Adwise - https://www.adwise.nl
+ * Copyright © Adwise 2026-present. All rights reserved.
+ * This module is distributed under the MIT license
+ * See LICENSE.md
+ */
+-->
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <!-- add a "Visibility" section below the vendor "Sharing" section of the edit-view modal -->
+        <referenceBlock name="view-switcher.action.edit.modal"
+                        template="Adwise_PublicDashboard::toolbar/view-switcher/modal/edit.phtml">
+            <arguments>
+                <argument name="public_sharing_view_model"
+                          xsi:type="object">Adwise\PublicDashboard\ViewModel\PublicSharing</argument>
+            </arguments>
+        </referenceBlock>
+        <referenceContainer name="before.body.end">
+            <block name="view-switcher.public-sharing.js"
+                   template="Adwise_PublicDashboard::js/view-switcher/public-sharing.phtml"
+                   ifconfig="hyva_admin_dashboard/general/enable"/>
+        </referenceContainer>
+    </body>
+</page>

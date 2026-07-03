@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Adwise - https://www.adwise.nl
+ * Copyright © Adwise 2026-present. All rights reserved.
+ * This module is distributed under the MIT license
+ * See LICENSE.md
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <type name="Hyva\AdminDashboardFramework\ViewModel\Locale">
+        <plugin name="adwise_public_dashboard_guest_safe_locale"
+                type="Adwise\PublicDashboard\Plugin\GuestSafeLocale"/>
+    </type>
+</config>

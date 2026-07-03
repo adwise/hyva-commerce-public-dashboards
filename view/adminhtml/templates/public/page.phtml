@@ -1,0 +1,116 @@
+<?php
+/**
+ * Adwise - https://www.adwise.nl
+ * Copyright © Adwise 2026-present. All rights reserved.
+ * This module is distributed under the MIT license
+ * See LICENSE.md
+ */
+declare(strict_types=1);
+
+use Magento\Framework\Escaper;
+use Magento\Framework\View\Element\Template;
+
+/** @var Escaper $escaper */
+/** @var Template $block */
+
+/** @var array[] $widgets pre-rendered widget data, see \Adwise\PublicDashboard\Model\PublicPageRenderer */
+$widgets = $block->getData('widgets') ?? [];
+$refreshSeconds = 300;
+?>
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <meta http-equiv="refresh" content="<?= (int)$refreshSeconds; ?>">
+    <title><?= $escaper->escapeHtml(__('Dashboard')); ?></title>
+    <link rel="stylesheet" href="<?= $escaper->escapeUrl($block->getData('styles_url')); ?>">
+    <link rel="stylesheet" href="<?= $escaper->escapeUrl($block->getData('gridstack_css_url')); ?>">
+    <style>
+        body.adwise-public-dashboard {
+            margin: 0;
+            padding: 2.4rem;
+        }
+        /* static grid placement; the admin stylesheet provides the 4-column grid and card styles */
+        .adwise-public-dashboard .grid-stack .widget {
+            position: relative !important;
+            inset: 0 !important;
+            min-width: 100%;
+            min-height: 100%;
+        }
+        /* without the gridstack runtime nothing constrains the card contents: make the card a
+           column flexbox so the body fills the widget height and scrolls its overflow */
+        .adwise-public-dashboard .widget-container.grid-stack-item-content {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .adwise-public-dashboard .widget-body {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        .adwise-public-dashboard .widget-main {
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+        .adwise-public-dashboard .widget-main-wrapper {
+            height: 100%;
+            overflow: auto;
+        }
+        /* the public page is read-only: hide admin-only interaction */
+        .adwise-public-dashboard .widget-menu-toggle,
+        .adwise-public-dashboard .heading-filter,
+        .adwise-public-dashboard .widget-select {
+            display: none !important;
+        }
+    </style>
+</head>
+<body class="adwise-public-dashboard">
+    <div class="widgets-container">
+        <div class="grid-stack">
+            <?php foreach ($widgets as $widget): ?>
+                <div class="widget grid-stack-item <?= $escaper->escapeHtmlAttr($widget['type_id']); ?>"
+                     id="widget-instance-<?= (int)$widget['instance_id']; ?>"
+                     x-data="publicDashboardWidget"
+                     data-instance-id="<?= (int)$widget['instance_id']; ?>"
+                     style="grid-column: <?= (int)$widget['x'] + 1; ?> / span <?= (int)$widget['width']; ?>; grid-row: <?= (int)$widget['y'] + 1; ?> / span <?= (int)$widget['height']; ?>;">
+                    <section class="widget-container grid-stack-item-content"
+                             id="widget-wrapper-<?= (int)$widget['instance_id']; ?>"
+                             aria-label="<?= $escaper->escapeHtmlAttr($widget['title']); ?>">
+                        <?= /** @noEscape */ $widget['content']; ?>
+                    </section>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+
+    <script src="<?= $escaper->escapeUrl($block->getData('apexcharts_url')); ?>"></script>
+    <script>
+        <?php /** Read-only stand-ins for the Alpine scope the widget templates expect from the admin dashboard */ ?>
+        window.addEventListener('alpine:init', () => {
+            Alpine.data('publicDashboardWidget', () => ({
+                instanceId: null,
+                init() {
+                    this.instanceId = this.$root.dataset.instanceId;
+                },
+                checkWidgetOverflows() {},
+                getWidgetOverflowClasses: '',
+            }));
+            Alpine.data('widgetPropertySwitcher', () => ({
+                onPropertyChange() {},
+                isPropertySelected() {
+                    return this.$el.value === this.$root.dataset.selectedOption;
+                },
+            }));
+        }, {once: true});
+    </script>
+    <?php /** All widget-type Alpine components attached by the dashboard handles */ ?>
+    <?= /** @noEscape */ $block->getLayout()->renderElement('widget-container.after'); ?>
+    <?= /** @noEscape */ $block->getLayout()->renderElement('before.body.end'); ?>
+    <script type="module" src="<?= $escaper->escapeUrl($block->getData('alpine_url')); ?>" defer></script>
+</body>
+</html>

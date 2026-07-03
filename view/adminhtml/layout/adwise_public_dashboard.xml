@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Adwise - https://www.adwise.nl
+ * Copyright © Adwise 2026-present. All rights reserved.
+ * This module is distributed under the MIT license
+ * See LICENSE.md
+ */
+-->
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <!--
+            The hyva_dashboard_widget handle attaches the widget-type JS components to
+            before.body.end and to widget-container.after (inside "content"); providing these
+            containers here collects them for the public page. Only the JS bundles are rendered,
+            the admin widget container UI itself is not.
+        -->
+        <container name="before.body.end"/>
+        <container name="content"/>
+
+        <!-- the widget menu (edit/duplicate/reload/delete/full screen) is admin-only interaction -->
+        <referenceBlock name="widget-instance.menu" remove="true"/>
+
+        <!-- loads ApexCharts through RequireJS, which the public page does not have -->
+        <referenceBlock name="apex-charts.js" remove="true"/>
+
+        <block name="adwise.public-dashboard.page" template="Adwise_PublicDashboard::public/page.phtml"/>
+    </body>
+</page>

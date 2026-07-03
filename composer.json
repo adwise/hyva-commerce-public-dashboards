@@ -1,0 +1,39 @@
+{
+    "name": "adwise/module-public-dashboard",
+    "description": "Share the Hyvä Commerce Admin Dashboard through a unique public URL, e.g. for an office wallboard display",
+    "type": "magento2-module",
+    "license": "MIT",
+    "homepage": "https://github.com/adwise/hyva-commerce-public-dashboards",
+    "support": {
+        "issues": "https://github.com/adwise/hyva-commerce-public-dashboards/issues"
+    },
+    "keywords": [
+        "magento2",
+        "hyva",
+        "admin-dashboard",
+        "wallboard",
+        "public-dashboard"
+    ],
+    "authors": [
+        {
+            "name": "Adwise",
+            "homepage": "https://www.adwise.nl/"
+        }
+    ],
+    "require": {
+        "php": ">=8.2",
+        "magento/framework": "*",
+        "magento/module-backend": ">=102.0.0",
+        "magento/module-store": ">=101.1.0",
+        "hyva-themes/commerce-module-admin-dashboard": "^2.0",
+        "hyva-themes/magento2-theme-module": ">=1.3.21"
+    },
+    "autoload": {
+        "files": [
+            "registration.php"
+        ],
+        "psr-4": {
+            "Adwise\\PublicDashboard\\": ""
+        }
+    }
+}

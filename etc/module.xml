@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Adwise - https://www.adwise.nl
+ * Copyright © Adwise 2026-present. All rights reserved.
+ * This module is distributed under the MIT license
+ * See LICENSE.md
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Module/etc/module.xsd">
+    <module name="Adwise_PublicDashboard">
+        <sequence>
+            <module name="Hyva_AdminDashboardFramework"/>
+        </sequence>
+    </module>
+</config>

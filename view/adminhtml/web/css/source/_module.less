@@ -1,0 +1,30 @@
+/**
+ * Adwise - https://www.adwise.nl
+ * Copyright © Adwise 2026-present. All rights reserved.
+ * This module is distributed under the MIT license
+ * See LICENSE.md
+ */
+
+.view-manager-edit-modal {
+    .public-dashboard-visibility {
+        margin-top: 1.5rem;
+    }
+
+    .public-dashboard-sharing {
+        grid-column: ~"1 / -1";
+
+        // undo the full-size card sizing .options-grid applies to buttons
+        button {
+            height: auto;
+            width: auto;
+        }
+
+        .public-dashboard-url {
+            margin-bottom: 1rem;
+        }
+
+        .public-dashboard-actions {
+            justify-content: flex-start;
+        }
+    }
+}

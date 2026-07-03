@@ -1,0 +1,141 @@
+<?php
+/**
+ * Adwise - https://www.adwise.nl
+ * Copyright © Adwise 2026-present. All rights reserved.
+ * This module is distributed under the MIT license
+ * See LICENSE.md
+ */
+declare(strict_types=1);
+
+use Hyva\Theme\ViewModel\HyvaCsp;
+use Magento\Backend\Block\Template;
+use Magento\Framework\Escaper;
+
+/** @var HyvaCsp $hyvaCsp */
+/** @var Escaper $escaper */
+/** @var Template $block */
+
+/**
+ * Nested inside the edit-view modal scope defined in
+ * Hyva_AdminDashboardFramework::js/toolbar/view-switcher.phtml — `sourceViewId` and
+ * `isEditViewModalVisible` are inherited from there.
+ * @link https://alpinejs.dev/directives/data#scope
+ */
+?>
+<script>
+    function publicDashboardSharing()
+    {
+        return {
+            publicUrl: '',
+            publicViewId: null,
+            isPanelOpen: false,
+            isBusy: false,
+            copied: false,
+            errorMessage: '',
+
+            init()
+            {
+                this.publicUrl = this.$root.dataset.publicUrl || '';
+                this.publicViewId = this.$root.dataset.publicViewId
+                    ? parseInt(this.$root.dataset.publicViewId, 10)
+                    : null;
+
+                this.$watch('isEditViewModalVisible', isVisible => {
+                    if (isVisible) {
+                        this.resetPanel();
+                    }
+                });
+            },
+
+            resetPanel()
+            {
+                this.errorMessage = '';
+                this.copied = false;
+                this.isPanelOpen = this.isSharedView();
+            },
+
+            isSharedView()
+            {
+                return this.publicViewId !== null && this.publicViewId === this.sourceViewId;
+            },
+
+            generate()
+            {
+                this.post(this.$root.dataset.generateUrl, {view_id: this.sourceViewId}).then(result => {
+                    if (result && result.success) {
+                        this.publicUrl = result.url;
+                        this.publicViewId = parseInt(result.view_id, 10);
+                    }
+                });
+            },
+
+            disable()
+            {
+                this.post(this.$root.dataset.disableUrl).then(result => {
+                    if (result && result.success) {
+                        this.publicUrl = '';
+                        this.publicViewId = null;
+                    }
+                });
+            },
+
+            post(url, params = {})
+            {
+                this.isBusy = true;
+                this.errorMessage = '';
+
+                const formData = new FormData();
+                formData.append('form_key', window.FORM_KEY);
+                Object.entries(params).forEach(([key, value]) => formData.append(key, String(value)));
+
+                return fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                    },
+                    body: formData,
+                    credentials: 'include',
+                }).then(response => {
+                    return response.json();
+                }).then(result => {
+                    if (result.error_code === 'view_access_revoked') {
+                        window.dispatchEvent(new CustomEvent('dashboard-view-access-revoked', {
+                            detail: {
+                                viewId: result.view_id,
+                                message: result.message,
+                            },
+                        }));
+
+                        return result;
+                    }
+
+                    if (!result.success) {
+                        this.errorMessage = result.message
+                            || '<?= $escaper->escapeJs(__('Something went wrong. Please try again.')); ?>';
+                    }
+
+                    return result;
+                }).catch(() => {
+                    this.errorMessage = '<?= $escaper->escapeJs(__('Something went wrong. Please try again.')); ?>';
+                }).finally(() => {
+                    this.isBusy = false;
+                });
+            },
+
+            copyUrl()
+            {
+                navigator.clipboard.writeText(this.publicUrl).then(() => {
+                    this.copied = true;
+                    setTimeout(() => this.copied = false, 2000);
+                });
+            },
+        };
+    }
+
+    window.addEventListener(
+        'alpine:init',
+        () => Alpine.data('publicDashboardSharing', publicDashboardSharing),
+        {once: true}
+    );
+</script>
+<?php if (isset($hyvaCsp)) $hyvaCsp->registerInlineScript(); ?>

@@ -1,0 +1,244 @@
+<?php
+/**
+ * Adwise - https://www.adwise.nl
+ * Copyright © Adwise 2026-present. All rights reserved.
+ * This module is distributed under the MIT license
+ * See LICENSE.md
+ *
+ * Override of Hyva_AdminDashboardFramework::toolbar/view-switcher/modal/edit.phtml (2.0.1).
+ * Adds a "Visibility" section below the vendor "Sharing" section: a unique public URL that
+ * shows a read-only version of the view without an admin login, e.g. for an office wallboard
+ * display. The vendor markup is unchanged — compare against the vendor template after
+ * upgrading the dashboard module.
+ */
+declare(strict_types=1);
+
+use Adwise\PublicDashboard\ViewModel\PublicSharing;
+use Hyva\AdminDashboardFramework\Api\V1\View\ViewInterface;
+use Hyva\Theme\Model\ViewModelRegistry;
+use Hyva\Theme\ViewModel\LucideIcons;
+use Magento\Backend\Block\Template;
+use Magento\Framework\Escaper;
+
+/** @var Escaper $escaper */
+/** @var Template $block */
+/** @var ViewModelRegistry $viewModels */
+/** @var LucideIcons $icons */
+$icons = $viewModels->require(LucideIcons::class);
+
+/** @var PublicSharing|null $publicSharing */
+$publicSharing = $block->getData('public_sharing_view_model');
+$canSharePublic = $publicSharing && $publicSharing->isAllowed();
+
+/** The AlpineJS context for this template is defined in Hyva_AdminDashboardFramework::js/toolbar/view-switcher.phtml */
+?>
+<dialog x-data="dashboardViewSwitcherEditViewModal"
+        x-show="isEditViewModalVisible"
+        x-htmldialog.noscroll="closeEditViewModal"
+        @dashboard-view-edit-modal-open.window="openEditViewModal"
+        aria-labelledby="view-manager-edit-heading"
+        class="view-manager-edit-modal widget-modal-overlay small-modal">
+    <div class="widget-modal-container">
+        <div class="widget-modal-header">
+            <div class="widget-modal-icon">
+                <?= $icons->scanEyeHtml('', 20, 20, ['aria-hidden' => 'true']) ?>
+            </div>
+            <h3 id="view-manager-edit-heading">
+                <?= $escaper->escapeHtml(__('Edit View')); ?>
+            </h3>
+            <button type="button"
+                    @click="closeEditViewModal"
+                    aria-label="<?= $escaper->escapeHtmlAttr(__('Close')); ?>"
+                    title="<?= $escaper->escapeHtmlAttr(__('Close')); ?>"
+                    class="action action-widget-icon">
+                <?= /** @noEscape */ $icons->xHtml('', 24, 24, ['aria-hidden' => 'true']); ?>
+            </button>
+        </div>
+        <div class="widget-modal-body">
+            <form id="view-manager-edit-form" @submit.prevent="saveView">
+                <div class="field">
+                    <label for="view-manager-edit-name">
+                        <?= $escaper->escapeHtml(__('View Name')); ?>
+                    </label>
+                    <input type="text"
+                           id="view-manager-edit-name"
+                           class="admin__control-text"
+                           placeholder="<?= $escaper->escapeHtmlAttr(__('Enter view name')); ?>"
+                           maxlength="255"
+                           :value="getPendingViewName"
+                           @input="setPendingViewName"
+                           required>
+                </div>
+                <template x-if="isModalRolesSectionVisible">
+                    <fieldset class="view-manager-roles-section options-grid">
+                        <legend class="view-manager-roles-heading">
+                            <?= $escaper->escapeHtml(__('Sharing')); ?>
+                        </legend>
+                        <div class="view-manager-role-row">
+                            <input type="radio"
+                                   id="edit-modal-sharing-private"
+                                   name="edit-modal-sharing"
+                                   value="<?= (int)ViewInterface::SHARING_MODE_PRIVATE ?>"
+                                   class="sr-only action-radio"
+                                   :checked="isModalSharingModeSelected"
+                                   @change="setSharingMode">
+                            <label class="action-icon action-widget-tertiary action-square action-lg"
+                                   for="edit-modal-sharing-private">
+                                <?= $icons->userLockHtml('', 16, 16, ['aria-hidden' => 'true']) ?>
+                                <span><?= $escaper->escapeHtml(__('Private')); ?></span>
+                            </label>
+                        </div>
+                        <div class="view-manager-role-row">
+                            <input type="radio"
+                                   name="edit-modal-sharing"
+                                   id="edit-modal-sharing-everyone"
+                                   value="<?= (int)ViewInterface::SHARING_MODE_EVERYONE ?>"
+                                   class="sr-only action-radio"
+                                   :checked="isModalSharingModeSelected"
+                                   @change="setSharingMode">
+                            <label class="action-icon action-widget-tertiary action-square action-lg"
+                                   for="edit-modal-sharing-everyone">
+                                <?= $icons->usersHtml('', 16, 16, ['aria-hidden' => 'true']) ?>
+                                <span><?= $escaper->escapeHtml(__('Share with Everyone')); ?></span>
+                            </label>
+                        </div>
+                        <div class="view-manager-role-row">
+                            <input type="radio"
+                                   name="edit-modal-sharing"
+                                   id="edit-modal-sharing-roles"
+                                   value="<?= (int)ViewInterface::SHARING_MODE_SELECTED ?>"
+                                   class="sr-only action-radio"
+                                   :checked="isModalSharingModeSelected"
+                                   @change="setSharingMode">
+                            <label class="action-icon action-widget-tertiary action-square action-lg"
+                                   for="edit-modal-sharing-roles">
+                                <?= $icons->userCogHtml('', 16, 16, ['aria-hidden' => 'true']) ?>
+                                <span><?= $escaper->escapeHtml(__('Share with Selected Roles')); ?></span>
+                            </label>
+                        </div>
+                        <template x-if="isModalSelectedRolesSectionVisible">
+                            <div class="view-manager-role-container">
+                                <template x-for="role in availableRoles" :key="role.role_id">
+                                    <div class="view-manager-role-row">
+                                        <input type="checkbox"
+                                               class="admin__control-checkbox"
+                                               data-modal-type="edit"
+                                               :id="getModalRoleCheckboxId"
+                                               :checked="isViewSharedWithRole"
+                                               :value="role.role_id"
+                                               @change="toggleEditViewRole">
+                                        <label class="view-manager-role-checkbox"
+                                               data-modal-type="edit"
+                                               :for="getModalRoleCheckboxId">
+                                            <span x-text="role.role_name"></span>
+                                        </label>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </fieldset>
+                </template>
+                <?php if ($canSharePublic): ?>
+                    <fieldset class="view-manager-roles-section options-grid public-dashboard-visibility"
+                              x-data="publicDashboardSharing"
+                              data-public-url="<?= $escaper->escapeHtmlAttr($publicSharing->getPublicUrl()); ?>"
+                              data-public-view-id="<?= $escaper->escapeHtmlAttr((string)$publicSharing->getPublicViewId()); ?>"
+                              data-generate-url="<?= $escaper->escapeHtmlAttr($publicSharing->getGenerateUrl()); ?>"
+                              data-disable-url="<?= $escaper->escapeHtmlAttr($publicSharing->getDisableUrl()); ?>">
+                        <legend class="view-manager-roles-heading">
+                            <?= $escaper->escapeHtml(__('Visibility')); ?>
+                        </legend>
+                        <div class="view-manager-role-row">
+                            <input type="checkbox"
+                                   id="edit-modal-visibility-public"
+                                   class="sr-only action-radio"
+                                   :checked="isPanelOpen"
+                                   @change="isPanelOpen = $event.target.checked">
+                            <label class="action-icon action-widget-tertiary action-square action-lg"
+                                   for="edit-modal-visibility-public">
+                                <?= $icons->globeHtml('', 16, 16, ['aria-hidden' => 'true']) ?>
+                                <span><?= $escaper->escapeHtml(__('Public')); ?></span>
+                            </label>
+                        </div>
+                        <template x-if="isPanelOpen">
+                            <div class="view-manager-role-container public-dashboard-sharing">
+                                <p>
+                                    <?= $escaper->escapeHtml(__(
+                                        'Share a read-only version of this view through a unique public URL, '
+                                        . 'for example on an office display. Anyone with the link can view it '
+                                        . 'without logging in.'
+                                    )); ?>
+                                </p>
+                                <template x-if="isSharedView()">
+                                    <div class="control input-group public-dashboard-url">
+                                        <input type="text"
+                                               readonly
+                                               class="admin__control-text"
+                                               :value="publicUrl"
+                                               @focus="$event.target.select()"
+                                               aria-label="<?= $escaper->escapeHtmlAttr(__('Public dashboard URL')); ?>">
+                                        <button type="button"
+                                                class="action action-widget-tertiary"
+                                                @click="copyUrl"
+                                                :title="copied ? '<?= $escaper->escapeJs(__('Copied!')); ?>' : '<?= $escaper->escapeJs(__('Copy URL')); ?>'">
+                                            <span x-show="!copied"><?= /** @noEscape */ $icons->copyHtml('', 20, 20, ['aria-hidden' => 'true']); ?></span>
+                                            <span x-show="copied" x-cloak><?= /** @noEscape */ $icons->checkHtml('', 20, 20, ['aria-hidden' => 'true']); ?></span>
+                                        </button>
+                                    </div>
+                                </template>
+                                <p x-show="isSharedView()">
+                                    <?= $escaper->escapeHtml(__('Generating a new link invalidates the current one.')); ?>
+                                </p>
+                                <p x-show="publicUrl && !isSharedView()" x-cloak>
+                                    <?= $escaper->escapeHtml(__(
+                                        'The public link currently points to another view. '
+                                        . 'Generating a link here will replace it.'
+                                    )); ?>
+                                </p>
+                                <div class="actions-toolbar public-dashboard-actions">
+                                    <button type="button"
+                                            class="action action-secondary"
+                                            :disabled="isBusy"
+                                            @click="generate">
+                                        <span x-show="!isSharedView()"><?= $escaper->escapeHtml(__('Generate Public Link')); ?></span>
+                                        <span x-show="isSharedView()" x-cloak><?= $escaper->escapeHtml(__('Regenerate Link')); ?></span>
+                                    </button>
+                                    <template x-if="isSharedView()">
+                                        <a class="action action-widget-tertiary"
+                                           :href="publicUrl"
+                                           target="_blank"
+                                           rel="noopener">
+                                            <?= $escaper->escapeHtml(__('Open')); ?>
+                                        </a>
+                                    </template>
+                                    <template x-if="isSharedView()">
+                                        <button type="button"
+                                                class="action action-widget-tertiary"
+                                                :disabled="isBusy"
+                                                @click="disable">
+                                            <?= $escaper->escapeHtml(__('Disable Link')); ?>
+                                        </button>
+                                    </template>
+                                </div>
+                                <p x-show="errorMessage" x-cloak class="message message-error error" x-text="errorMessage"></p>
+                            </div>
+                        </template>
+                    </fieldset>
+                <?php endif; ?>
+            </form>
+        </div>
+        <div class="widget-modal-footer">
+            <button type="button"
+                    @click="closeEditViewModal"
+                    class="action action-widget-tertiary">
+                <?= $escaper->escapeHtml(__('Cancel')); ?>
+            </button>
+            <button type="submit"
+                    form="view-manager-edit-form"
+                    :disabled="isViewModalFormSubmitDisabled"
+                    class="action action-primary">
+                <?= $escaper->escapeHtml(__('Save')); ?>
+            </button>
+        </div>
+    </div>
+</dialog>
