@@ -38,8 +38,9 @@ The link is bound to the dashboard view it was generated for. The token, admin u
 
 ## Installation
 
+The module is available on [Packagist](https://packagist.org/packages/adwise/module-public-dashboard):
+
 ```bash
-composer config repositories.adwise-public-dashboards vcs https://github.com/adwise/hyva-commerce-public-dashboards
 composer require adwise/module-public-dashboard
 bin/magento module:enable Adwise_PublicDashboard
 bin/magento setup:upgrade
